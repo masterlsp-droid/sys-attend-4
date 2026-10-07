@@ -18,11 +18,79 @@ def format_time(dt: Optional[datetime.datetime]) -> Optional[str]:
         dt = dt.astimezone(datetime.timezone.utc).replace(tzinfo=None)
     return dt.isoformat() + "Z"
 
+class ClassCreateRequest(BaseModel):
+    name: str
+
 class EnrollStartRequest(BaseModel):
     role: str
     name: str
     person_id: str
     subject: Optional[str] = None
+    class_name: Optional[str] = None
+
+@router.get("/classes")
+def list_classes(db: Session = Depends(get_db)):
+    classes = db.query(models.ClassGroup).order_by(models.ClassGroup.name.asc()).all()
+    result = []
+    for c in classes:
+        student_count = db.query(models.Person).filter(
+            models.Person.role == "student", 
+            models.Person.class_name == c.name
+        ).count()
+        result.append({
+            "id": c.id,
+            "name": c.name,
+            "student_count": student_count,
+            "created_at": format_time(c.created_at)
+        })
+    return {"classes": result}
+
+@router.post("/classes")
+def create_class(req: ClassCreateRequest, db: Session = Depends(get_db)):
+    name = req.name.strip()
+    if not name:
+        raise HTTPException(status_code=422, detail={"error": "INVALID_NAME", "message": "Class name cannot be empty"})
+    
+    existing = db.query(models.ClassGroup).filter(models.ClassGroup.name.ilike(name)).first()
+    if existing:
+        raise HTTPException(status_code=409, detail={"error": "DUPLICATE_CLASS", "message": f"Class '{name}' already exists"})
+    
+    new_class = models.ClassGroup(name=name)
+    db.add(new_class)
+    db.commit()
+    db.refresh(new_class)
+    return {
+        "id": new_class.id,
+        "name": new_class.name,
+        "student_count": 0,
+        "created_at": format_time(new_class.created_at)
+    }
+
+@router.delete("/classes/{class_id}")
+def delete_class(class_id: int, db: Session = Depends(get_db)):
+    c = db.query(models.ClassGroup).filter(models.ClassGroup.id == class_id).first()
+    if not c:
+        raise HTTPException(status_code=404, detail={"error": "NOT_FOUND", "message": "Class not found"})
+    
+    # Nullify class_name for enrolled students so they aren't deleted
+    db.query(models.Person).filter(models.Person.class_name == c.name).update({"class_name": None})
+    db.delete(c)
+    db.commit()
+    return {"status": "deleted", "id": class_id}
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(db: Session = Depends(get_db)):
+    total_classes = db.query(models.ClassGroup).count()
+    total_students = db.query(models.Person).filter(models.Person.role == "student").count()
+    total_teachers = db.query(models.Person).filter(models.Person.role == "teacher").count()
+    total_sessions = db.query(models.Session).count()
+    
+    return {
+        "total_classes": total_classes,
+        "total_students": total_students,
+        "total_teachers": total_teachers,
+        "total_sessions": total_sessions
+    }
 
 @router.post("/enroll/start")
 def enroll_start(req: EnrollStartRequest, db: Session = Depends(get_db)):
@@ -33,7 +101,7 @@ def enroll_start(req: EnrollStartRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=409, detail={"error": "DUPLICATE_ID", "message": "Duplicate ID"})
     
-    token = tokens.create_enrollment_token(db, req.role, req.person_id, req.name, req.subject)
+    token = tokens.create_enrollment_token(db, req.role, req.person_id, req.name, req.subject, req.class_name)
     return {"enrollment_token": token, "expires_in": 120}
 
 @router.post("/current-session/stop")
@@ -129,6 +197,18 @@ def session_details(session_id: int, db: Session = Depends(get_db)):
         "attendance": present_list
     }
 
+@router.delete("/sessions-history/{session_id}")
+def delete_session(session_id: int, db: Session = Depends(get_db)):
+    s = db.query(models.Session).filter(models.Session.id == session_id).first()
+    if not s:
+        raise HTTPException(status_code=404, detail={"error": "NOT_FOUND", "message": "Session not found"})
+    
+    # Delete associated attendance records first
+    db.query(models.Attendance).filter(models.Attendance.session_id == session_id).delete()
+    db.delete(s)
+    db.commit()
+    return {"status": "deleted", "session_id": session_id}
+
 @router.get("/health")
 def health_check(db: Session = Depends(get_db)):
     meta_v = db.query(models.Meta).filter(models.Meta.key == "embeddings_version").first()
@@ -162,8 +242,13 @@ def pi_status(db: Session = Depends(get_db)):
     }
 
 @router.get("/people")
-def get_people(role: str, db: Session = Depends(get_db)):
-    people = db.query(models.Person).filter(models.Person.role == role).all()
+def get_people(role: Optional[str] = None, class_name: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(models.Person)
+    if role:
+        query = query.filter(models.Person.role == role)
+    if class_name:
+        query = query.filter(models.Person.class_name == class_name)
+    people = query.all()
     result = []
     for p in people:
         result.append({
@@ -171,6 +256,7 @@ def get_people(role: str, db: Session = Depends(get_db)):
             "person_id": p.person_id,
             "name": p.name,
             "subject": p.subject,
+            "class_name": getattr(p, 'class_name', None),
             "created_at": format_time(p.created_at)
         })
     return {"people": result}

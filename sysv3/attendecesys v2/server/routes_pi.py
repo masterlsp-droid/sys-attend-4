@@ -52,6 +52,7 @@ def get_embeddings(db: Session = Depends(get_db)):
             "person_id": p.person_id,
             "name": p.name,
             "subject": p.subject,
+            "class_name": getattr(p, 'class_name', None),
             "embedding": list(emb_floats)
         })
     return {
@@ -94,6 +95,7 @@ def enroll_complete(req: EnrollCompleteRequest, db: Session = Depends(get_db)):
         person_id=token_record.person_id,
         name=token_record.name,
         subject=token_record.subject,
+        class_name=getattr(token_record, 'class_name', None),
         embedding=embedding_bytes,
         model_id=req.model_id
     )

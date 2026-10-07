@@ -29,8 +29,20 @@ export const loadPeople = async () => {
             li.style.justifyContent = 'space-between';
             li.style.alignItems = 'center';
             
-            const info = document.createElement('span');
-            info.textContent = `${p.name} (${p.person_id})${p.subject ? ' - ' + p.subject : ''}`;
+            const info = document.createElement('div');
+            info.style.display = 'flex';
+            info.style.alignItems = 'center';
+            info.style.gap = '0.5rem';
+            info.style.flexWrap = 'wrap';
+
+            let detailsHtml = `<strong>${escapeHtml(p.name)}</strong> <span class="text-muted">(${escapeHtml(p.person_id)})</span>`;
+            if (p.class_name) {
+                detailsHtml += ` <span class="badge class-badge">${escapeHtml(p.class_name)}</span>`;
+            }
+            if (p.subject) {
+                detailsHtml += ` <span class="badge subject-badge">${escapeHtml(p.subject)}</span>`;
+            }
+            info.innerHTML = detailsHtml;
             
             const delBtn = document.createElement('button');
             delBtn.className = 'btn danger-btn';

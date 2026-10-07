@@ -26,8 +26,23 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
 
-# Create tables
+from sqlalchemy import text
+
+def ensure_schema_compatibility():
+    with engine.connect() as conn:
+        for table in ["people", "enroll_tokens", "sessions"]:
+            try:
+                result = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
+                col_names = [r[1] for r in result]
+                if col_names and "class_name" not in col_names:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN class_name VARCHAR"))
+                    conn.commit()
+            except Exception:
+                pass
+
+# Create tables and ensure columns
 Base.metadata.create_all(bind=engine)
+ensure_schema_compatibility()
 
 app = FastAPI(title="Smart Attendance System API", lifespan=lifespan)
 

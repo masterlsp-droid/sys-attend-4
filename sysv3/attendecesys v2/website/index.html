@@ -20,7 +20,8 @@
             </div>
             <div class="header-center">
                 <nav class="tabs">
-                    <button class="tab-btn active" data-tab="enrollment">Enrollment</button>
+                    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+                    <button class="tab-btn" data-tab="enrollment">Enrollment</button>
                     <button class="tab-btn" data-tab="reports">Reports</button>
                 </nav>
             </div>
@@ -31,8 +32,81 @@
         </header>
 
         <main>
+            <!-- Dashboard Tab -->
+            <section id="tab-dashboard" class="tab-content active">
+                <!-- Overview Stats Grid -->
+                <div class="stats-grid">
+                    <div class="glass-panel stat-card">
+                        <div class="stat-icon">🏫</div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-total-classes">0</span>
+                            <span class="stat-label">Total Classes</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel stat-card">
+                        <div class="stat-icon">🎓</div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-total-students">0</span>
+                            <span class="stat-label">Students</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel stat-card">
+                        <div class="stat-icon">👨‍🏫</div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-total-teachers">0</span>
+                            <span class="stat-label">Teachers</span>
+                        </div>
+                    </div>
+                    <div class="glass-panel stat-card">
+                        <div class="stat-icon">📊</div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="stat-total-sessions">0</span>
+                            <span class="stat-label">Sessions</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Create Class Panel -->
+                <div class="glass-panel main-panel mt-2">
+                    <h2>Add New Class / Division</h2>
+                    <p class="section-desc">Create a class or division (e.g., <em>Division A</em>, <em>10th - Div B</em>) to organize enrolled students.</p>
+                    
+                    <form id="create-class-form" class="inline-form-group">
+                        <div class="form-group flex-1">
+                            <label for="class-name-input">Class / Division Name</label>
+                            <input type="text" id="class-name-input" required placeholder="e.g. Division A">
+                        </div>
+                        <button type="submit" id="create-class-btn" class="btn primary-btn mt-auto-btn">Create Class</button>
+                    </form>
+                    <div id="class-form-message" class="message-box hidden mt-1"></div>
+                </div>
+
+                <!-- Classes List Panel -->
+                <div class="glass-panel main-panel mt-2">
+                    <div class="history-header">
+                        <h2>Existing Classes</h2>
+                    </div>
+                    <div class="table-container">
+                        <table id="classes-table">
+                            <thead>
+                                <tr>
+                                    <th>Class Name</th>
+                                    <th>Enrolled Students</th>
+                                    <th>Created Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- rows injected via JS -->
+                            </tbody>
+                        </table>
+                        <div id="classes-empty" class="empty-state">No classes created yet. Use the form above to add your first class.</div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Enrollment Tab -->
-            <section id="tab-enrollment" class="tab-content active">
+            <section id="tab-enrollment" class="tab-content">
                 <div class="glass-panel main-panel">
                     <h2>Enroll Person</h2>
                     
@@ -48,6 +122,14 @@
                     </div>
 
                     <form id="enrollment-form">
+                        <div class="form-group" id="class-select-group">
+                            <label for="enroll-class">Class / Division <span class="required-star">*</span></label>
+                            <select id="enroll-class" required>
+                                <option value="" disabled selected>-- Select Class / Division --</option>
+                            </select>
+                            <small id="no-classes-hint" class="hint-text hidden">No classes found. <a href="#" id="goto-dashboard-link">Create a class in Dashboard</a> first.</small>
+                        </div>
+
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input type="text" id="name" required placeholder="John Doe">
@@ -171,6 +253,42 @@
                 </div>
             </section>
         </main>
+
+        <!-- Class Details Modal -->
+        <div id="class-details-modal" class="modal hidden">
+            <div class="modal-content glass-panel class-modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h2 id="modal-class-name" style="margin-bottom: 0.35rem;">Class Roster</h2>
+                        <div class="modal-subtitle-row">
+                            <span id="modal-class-count" class="badge class-badge">0 Enrolled</span>
+                            <span class="text-muted" style="font-size: 0.85rem; margin-left: 0.5rem;">Enrolled Students</span>
+                        </div>
+                    </div>
+                    <button id="close-class-modal" class="icon-btn" aria-label="Close">✕</button>
+                </div>
+                <div class="table-container mt-1 modal-table-container">
+                    <table id="modal-students-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">#</th>
+                                <th>Student Name</th>
+                                <th>Roll Number</th>
+                                <th>Enrolled Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- injected via JS -->
+                        </tbody>
+                    </table>
+                    <div id="modal-students-empty" class="empty-state hidden">No students enrolled in this class yet.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="modal-enroll-btn" class="btn primary-btn">Enroll Student in this Class</button>
+                    <button type="button" id="close-class-modal-btn" class="btn outline-btn">Close</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Settings Modal -->
         <div id="settings-modal" class="modal hidden">

@@ -3,6 +3,12 @@ from sqlalchemy.orm import relationship
 from server.db import Base
 import datetime
 
+class ClassGroup(Base):
+    __tablename__ = "classes"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+
 class Person(Base):
     __tablename__ = "people"
     id = Column(Integer, primary_key=True, index=True)
@@ -10,6 +16,7 @@ class Person(Base):
     person_id = Column(String, nullable=False)
     name = Column(String, nullable=False)
     subject = Column(String, nullable=True) # teachers only
+    class_name = Column(String, nullable=True) # e.g. 'Division A'
     embedding = Column(LargeBinary, nullable=False)
     model_id = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
@@ -21,6 +28,7 @@ class Session(Base):
     id = Column(Integer, primary_key=True, index=True)
     client_uuid = Column(String, unique=True, nullable=False)
     subject = Column(String, nullable=False)
+    class_name = Column(String, nullable=True)
     teacher_person_id = Column(String, nullable=True)
     teacher_name_snapshot = Column(String, nullable=False)
     start_time = Column(DateTime, nullable=False)
@@ -48,6 +56,7 @@ class EnrollToken(Base):
     person_id = Column(String)
     name = Column(String)
     subject = Column(String)
+    class_name = Column(String, nullable=True)
     expires_at = Column(DateTime)
     used = Column(Integer, default=0)
 

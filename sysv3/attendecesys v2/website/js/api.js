@@ -47,7 +47,16 @@ export const backendApi = {
         return request(`/api/sessions-history?${qs}`);
     },
     sessionDetails: (id) => request(`/api/sessions-history/${id}`),
-    getPeople: (role) => request(`/api/people?role=${role}`),
+    deleteSession: (id) => request(`/api/sessions-history/${id}`, { method: 'DELETE' }),
+    getClasses: () => request('/api/classes'),
+    createClass: (data) => request('/api/classes', { method: 'POST', body: JSON.stringify(data) }),
+    deleteClass: (id) => request(`/api/classes/${id}`, { method: 'DELETE' }),
+    getDashboardStats: () => request('/api/dashboard-stats'),
+    getPeople: (role, className = null) => {
+        let qs = `role=${role}`;
+        if (className) qs += `&class_name=${encodeURIComponent(className)}`;
+        return request(`/api/people?${qs}`);
+    },
     deletePerson: (role, id) => request(`/api/people/${role}/${id}`, { method: 'DELETE' })
 };
 
