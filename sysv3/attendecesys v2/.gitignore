@@ -1,0 +1,23 @@
+# Virtual environments
+venv/
+venv*/
+new_venv/
+env/
+.venv/
+
+# Environment files & secrets
+.env
+*.env
+
+# Python caches & build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+*.whl
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
